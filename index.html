@@ -3,6 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <title>EDM Continuous Music Generator</title>
+
+  <!-- 
+    ============================
+    STYLES
+    ============================
+    Styles are kept in the same file for simplicity and portability.
+    They are organized in sections:
+    1. General styles
+    2. Button and input styles
+    3. Layout and containers
+    4. Settings menu
+    5. Canvas and visualization
+    6. Audio overlay
+  -->
   <style>
     body {
       font-family: sans-serif;
@@ -184,13 +198,31 @@
   </style>
 </head>
 <body>
-  <!-- Add the overlay as the first element -->
+  <!-- 
+    ============================
+    AUDIO INITIALIZATION OVERLAY
+    ============================
+    This overlay ensures we get user gesture before starting audio context.
+    Required by modern browsers for audio playback.
+  -->
   <div id="audioStartOverlay">
     <button id="audioStartButton">Click to Enable Audio</button>
   </div>
+
+  <!-- 
+    ============================
+    MAIN TITLE
+    ============================
+  -->
   <h1>EDM Continuous Music Generator</h1>
 
-  <!-- PLAY CONTROLS & LOG -->
+  <!-- 
+    ============================
+    PLAYBACK CONTROLS
+    ============================
+    Main controls for starting/stopping the music generation.
+    Uses emoji icons for play/stop state visualization.
+  -->
   <div class="play-section">
     <h2>Playback Controls</h2>
     <button id="toggleBtn" data-playing="false">
@@ -199,7 +231,23 @@
       <span class="text">Start</span>
     </button>
   </div>
+
+  <!-- 
+    ============================
+    VISUALIZATION
+    ============================
+    Canvas element for real-time waveform visualization.
+    Updated using requestAnimationFrame for smooth rendering.
+  -->
   <canvas id="waveform-canvas"></canvas>
+
+  <!-- 
+    ============================
+    SETTINGS
+    ============================
+    Settings menu with sample configuration.
+    Includes custom URL support and validation.
+  -->
   <div id="settings-icon">⚙️</div>
   <div id="settings-menu" style="display: none;">
     <div class="header">
@@ -239,10 +287,32 @@
       <button class="save-btn">Save Changes</button>
     </div>
   </div>
+
+  <!-- 
+    ============================
+    LOG OUTPUT
+    ============================
+    Displays system messages and debug information.
+    Auto-scrolls to latest messages.
+  -->
   <div id="log"></div>
 
+  <!-- 
+    ============================
+    JAVASCRIPT
+    ============================
+    Main application code organized in sections:
+    1. State management
+    2. UI initialization
+    3. Audio setup
+    4. Event handlers
+    5. Visualization
+    6. Utility functions
+  -->
   <script>
-    // State management
+    // ============================
+    // STATE MANAGEMENT
+    // ============================
     let contextInitialized = false;
     let toneInitialized = false;
     let isPlaying = false;
@@ -251,7 +321,9 @@
     let transport;
     let pendingChanges = null;
 
-    // UI Elements
+    // ============================
+    // UI ELEMENTS
+    // ============================
     const audioStartOverlay = document.getElementById('audioStartOverlay');
     const audioStartButton = document.getElementById('audioStartButton');
     const customToggle = document.getElementById("customToggle");
@@ -269,7 +341,9 @@
     const saveBtn = settingsMenu.querySelector(".save-btn");
     const cancelBtn = settingsMenu.querySelector(".cancel-btn");
 
-    // Sample configurations
+    // ============================
+    // SAMPLE CONFIGURATION
+    // ============================
     const defaultDrumSamples = {
       kick: "Samples/SP1200 Drum Kit/SP1200 - Kicks/SPKICKS/SPKIK001.wav",
       snare: "Samples/SP1200 Drum Kit/SP1200 - Snares/SPSN001.wav",
@@ -279,7 +353,9 @@
 
     let currentSamples = { ...defaultDrumSamples };
 
-    // Logging helper
+    // ============================
+    // UTILITY FUNCTIONS
+    // ============================
     function logMessage(message) {
       const logDiv = document.getElementById("log");
       const p = document.createElement("p");
