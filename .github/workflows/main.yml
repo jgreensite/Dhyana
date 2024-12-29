@@ -14,7 +14,6 @@ jobs:
     # Download our main branch
     steps:
     - uses: actions/checkout@v2
-
     # Run our deployment command
     - name: Deploying the static website to gh-pages
       run: npm run deploy
