@@ -1,0 +1,15 @@
+{
+  "devDependencies": {
+    "husky": "^8.0.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run prod"
+    }
+  },
+  "scripts": {
+    "prod": "echo \"Add your build command here\"",
+    "postinstall": "node ./node_modules/husky/lib/bin.js install",
+    "deploy": "git push origin `git subtree split --prefix dist master`:gh-pages --force"
+  }
+}
