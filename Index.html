@@ -6,7 +6,7 @@
   <!-- Tone.js (Open-Source) -->
   <script 
     src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.min.js" 
-    integrity="sha512-E1+I25m31WNRmyAH22KKKpwm2pyuVsZaffz4gquzAs3Ehu2/ryULMco0nPlzqcHLPywj7FK3ZtOdBJf/9Y5bhQ==" 
+    integrity="sha512-E1+I25m31WNRmyAH22KKKpwm2pyuVsZaffz4gquzAs3Ehu2/ryULMco0nPlzqcHLPywj7FK3ZtOdBJf/9Y5bhQ=="
     crossorigin="anonymous"
     referrerpolicy="no-referrer">
   </script>
@@ -30,20 +30,53 @@
       color: #eee;
       border: 2px solid #666;
       border-radius: 4px;
+      margin-bottom: 1em;
     }
     button:hover {
       background: #444;
+    }
+    #log {
+      width: 100%;
+      max-width: 600px;
+      margin: 1em auto 0;
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 0.9em;
+      padding: 1em;
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #333;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
   <h1>Autechre-like Continuous Music Generator</h1>
-  <p>Click "Start/Stop" to toggle the music. Wait a few measures to hear how the beat & tones morph.</p>
+  <p>Tap “Start” to unlock audio and begin. Watch the log for drum hits, synth notes, etc.</p>
   <button id="toggleBtn">Start</button>
+  <div id="log"></div>
 
   <script>
     // ----------------------------
-    // Global Audio / Tone.js Setup
+    // 1. Logging Helper
+    // ----------------------------
+    function logMessage(message) {
+      const logDiv = document.getElementById("log");
+      const p = document.createElement("p");
+      p.textContent = message;
+      logDiv.appendChild(p);
+      // Auto-scroll to bottom
+      logDiv.scrollTop = logDiv.scrollHeight;
+      // (Optional) If you want to limit the log size:
+      // if (logDiv.childNodes.length > 100) {
+      //   logDiv.removeChild(logDiv.firstChild);
+      // }
+    }
+
+    // ----------------------------
+    // 2. Global Audio Setup
     // ----------------------------
     const drumSamples = {
       kick: "https://raw.githubusercontent.com/danigb/samples/master/drums/TR-808/kick.wav",
@@ -73,7 +106,7 @@
       }
     });
 
-    // Send synth through some effects
+    // Effects chain
     const filter = new Tone.AutoFilter({
       frequency: "4n",
       baseFrequency: 200,
@@ -91,14 +124,14 @@
     synth.connect(filter);
     filter.connect(reverb);
 
-    // Transport BPM
+    // Global BPM
     Tone.Transport.bpm.value = 120;
 
-    // 16 steps per measure
+    // We'll use 16 steps per measure
     const stepsPerMeasure = 16;
     let currentStep = 0;
 
-    // We’ll store random patterns for each measure (and refresh them each measure)
+    // Patterns for each measure (refreshed each measure)
     let drumPattern = {
       kick: [],
       snare: [],
@@ -107,14 +140,13 @@
     };
     let synthPattern = [];
 
-    // Pentatonic scale in A minor for some semblance of musical sense
+    // Pentatonic scale for melodic notes
     const scale = ["A3", "C4", "D4", "E4", "G4", "A4", "C5", "D5", "E5"];
 
     // -------------
-    // Randomization
+    // 3. Randomization
     // -------------
     function randomizeDrumPattern() {
-      // Each array is length 16; 1 means play, 0 means no play
       drumPattern.kick = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.4 ? 1 : 0));
       drumPattern.snare = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.25 ? 1 : 0));
       drumPattern.hatClosed = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.5 ? 1 : 0));
@@ -122,51 +154,61 @@
     }
 
     function randomizeSynthPattern() {
-      // Random note from the scale for each of the 16 steps
       synthPattern = Array.from({ length: stepsPerMeasure }, () => {
         // 30% chance to play a note
         if (Math.random() < 0.3) {
           const note = scale[Math.floor(Math.random() * scale.length)];
           return note;
-        } 
+        }
         return null;
       });
     }
 
     function randomizeEffects() {
-      // Random reverb wetness & decay
-      reverb.wet.value = Math.random() * 0.5;
-      reverb.decay = Math.random() * 3 + 0.5; // range 0.5 - 3.5
-
-      // Random filter base frequency & type
-      const freq = Math.random() * 1000 + 200; // 200 - 1200
-      filter.baseFrequency = freq;
+      reverb.wet.value = Math.random() * 0.5;       // 0 - 0.5
+      reverb.decay = Math.random() * 3 + 0.5;       // 0.5 - 3.5
+      filter.baseFrequency = Math.random() * 1000 + 200; // 200 - 1200
     }
 
-    // Initialize random patterns & effects
+    // Initialize patterns/effects
     randomizeDrumPattern();
     randomizeSynthPattern();
     randomizeEffects();
 
     // ---------------------------
-    // Step Scheduler (Every 16th)
+    // 4. Scheduling Loop
     // ---------------------------
     const loop = new Tone.Loop((time) => {
-      // Play events at current step
-      if (drumPattern.kick[currentStep]) kickPlayer.start(time);
-      if (drumPattern.snare[currentStep]) snarePlayer.start(time);
-      if (drumPattern.hatClosed[currentStep]) hatClosedPlayer.start(time);
-      if (drumPattern.hatOpen[currentStep]) hatOpenPlayer.start(time);
+      // Drum triggers
+      if (drumPattern.kick[currentStep]) {
+        kickPlayer.start(time);
+        logMessage(`Kick at step ${currentStep}`);
+      }
+      if (drumPattern.snare[currentStep]) {
+        snarePlayer.start(time);
+        logMessage(`Snare at step ${currentStep}`);
+      }
+      if (drumPattern.hatClosed[currentStep]) {
+        hatClosedPlayer.start(time);
+        logMessage(`Closed hat at step ${currentStep}`);
+      }
+      if (drumPattern.hatOpen[currentStep]) {
+        hatOpenPlayer.start(time);
+        logMessage(`Open hat at step ${currentStep}`);
+      }
 
+      // Synth trigger
       const note = synthPattern[currentStep];
       if (note) {
         synth.triggerAttackRelease(note, "16n", time);
+        logMessage(`Synth note ${note} at step ${currentStep}`);
       }
 
       currentStep = (currentStep + 1) % stepsPerMeasure;
 
-      // If we have looped back to step 0, randomize patterns & effects again
+      // If we just wrapped a measure, randomize new patterns & effects
       if (currentStep === 0) {
+        logMessage("---- New measure randomization ----");
         randomizeDrumPattern();
         randomizeSynthPattern();
         randomizeEffects();
@@ -174,21 +216,24 @@
     }, "16n").start(0);
 
     // -------------
-    // Start/Stop UI
+    // 5. Start/Stop UI
     // -------------
     let isPlaying = false;
     const toggleBtn = document.getElementById("toggleBtn");
 
     toggleBtn.addEventListener("click", async () => {
       if (!isPlaying) {
-        // Start the audio context and transport
+        // *** Important for mobile: Unlock audio context ***
         await Tone.start();
+        logMessage("Audio context unlocked");
+
         Tone.Transport.start();
         toggleBtn.textContent = "Stop";
+        logMessage("Transport started");
       } else {
-        // Stop
         Tone.Transport.stop();
         toggleBtn.textContent = "Start";
+        logMessage("Transport stopped");
       }
       isPlaying = !isPlaying;
     });
