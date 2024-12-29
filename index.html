@@ -72,6 +72,30 @@
       border: 1px solid #333;
       border-radius: 4px;
     }
+    #waveform-canvas {
+      width: 100%;
+      max-width: 600px;
+      height: 100px;
+      margin: 0.5em auto;
+      background: #333;
+      display: block;
+    }
+    #settings-icon {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+      font-size: 2em;
+      cursor: pointer;
+    }
+    #settings-menu {
+      position: absolute;
+      top: 3em;
+      right: 1em;
+      background: #222;
+      padding: 1em;
+      border-radius: 4px;
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
@@ -112,7 +136,11 @@
     <h2>Playback Controls</h2>
     <button id="toggleBtn">Start</button>
   </div>
-
+  <canvas id="waveform-canvas"></canvas>
+  <div id="settings-icon">⚙️</div>
+  <div id="settings-menu" style="display: none;">
+      <!-- Drum settings will be moved here -->
+  </div>
   <div id="log"></div>
 
   <script>
@@ -368,6 +396,104 @@
         // Unlock audio context for mobile
         await Tone.start();
         logMessage("Audio context unlocked");
+
+        Tone.Transport.start();
+        toggleBtn.textContent = "Stop";
+        logMessage("Transport started");
+      } else {
+        Tone.Transport.stop();
+        toggleBtn.textContent = "Start";
+        logMessage("Transport stopped");
+      }
+      isPlaying = !isPlaying;
+    });
+
+    // ----------------------------
+    // 5. Waveform Visualizer
+    // ----------------------------
+    const canvas = document.getElementById("waveform-canvas");
+    const canvasCtx = canvas.getContext("2d");
+    let analyser;
+
+    function drawWaveform() {
+      if (!analyser) return;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+      analyser.getByteTimeDomainData(dataArray);
+
+      canvasCtx.lineWidth = 2;
+      canvasCtx.strokeStyle = "cyan";
+      canvasCtx.beginPath();
+
+      const sliceWidth = canvas.width * 1.0 / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = v * canvas.height / 2;
+
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
+
+      canvasCtx.lineTo(canvas.width, canvas.height / 2);
+      canvasCtx.stroke();
+
+      requestAnimationFrame(drawWaveform);
+    }
+
+    function setupAnalyser() {
+      analyser = Tone.context.createAnalyser();
+      analyser.fftSize = 2048;
+      Tone.getDestination().connect(analyser);
+      drawWaveform();
+    }
+
+    // ----------------------------
+    // 6. Settings Menu
+    // ----------------------------
+    const settingsIcon = document.getElementById("settings-icon");
+    const settingsMenu = document.getElementById("settings-menu");
+    const configSection = document.querySelector(".config-section");
+
+    // Move config section into settings menu
+    settingsMenu.appendChild(configSection);
+
+    settingsIcon.addEventListener("click", () => {
+      settingsMenu.style.display = settingsMenu.style.display === "none" ? "block" : "none";
+    });
+
+    // Modify the start/stop button to setup the analyser
+    toggleBtn.addEventListener("click", async () => {
+      if (!isPlaying) {
+        // If custom is toggled, grab user inputs again
+        if (customToggle.checked) {
+          currentSamples.kick = kickUrlInput.value;
+          currentSamples.snare = snareUrlInput.value;
+          currentSamples.hatClosed = hatClosedUrlInput.value;
+          currentSamples.hatOpen = hatOpenUrlInput.value;
+        } else {
+          currentSamples = { ...defaultDrumSamples };
+        }
+
+        // Create new players from the current sample config
+        drumPlayers = createDrumPlayers(currentSamples);
+
+        // Unlock audio context for mobile
+        await Tone.start();
+        logMessage("Audio context unlocked");
+
+        // Setup analyser for the kick player
+        setupAnalyser(drumPlayers.kickPlayer);
 
         Tone.Transport.start();
         toggleBtn.textContent = "Stop";
