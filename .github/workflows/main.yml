@@ -19,6 +19,13 @@ jobs:
     - name: Configure Git
       run: |
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+    - name: Commit changes
+      run: |
+        cd dist
+        git init
+        git add .
+        git commit -m "Deploy to gh-pages"
+        cd ..
     # Run our deployment command
     - name: Deploying the static website to gh-pages
       run: npm run deploy
