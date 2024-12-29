@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EDM Continuous Music Generator</title>
+  <title>EDM Continuous Music Generator - Configurable</title>
   <!-- Tone.js from CDN (No integrity attribute to avoid mismatch) -->
   <script
     src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.min.js"
@@ -12,27 +12,50 @@
   <style>
     body {
       font-family: sans-serif;
-      text-align: center;
       margin: 0;
-      padding: 2em;
+      padding: 1em;
       background: #111;
       color: #eee;
     }
-    h1 {
+    h1, h2 {
+      text-align: center;
       margin-bottom: 0.5em;
     }
+    button, input[type="text"] {
+      font-size: 1em;
+      padding: 0.4em 0.6em;
+      margin: 0.2em;
+    }
     button {
-      font-size: 1.2em;
-      padding: 0.8em 1.2em;
-      cursor: pointer;
       background: #333;
       color: #eee;
-      border: 2px solid #666;
+      border: 1px solid #555;
       border-radius: 4px;
-      margin-bottom: 1em;
+      cursor: pointer;
     }
     button:hover {
       background: #444;
+    }
+    .config-section, .play-section {
+      max-width: 600px;
+      margin: 0.5em auto;
+      background: #222;
+      padding: 1em;
+      border-radius: 4px;
+    }
+    label {
+      display: inline-block;
+      width: 6em;
+      text-align: right;
+      margin-right: 0.5em;
+    }
+    .checkbox-label {
+      width: auto;
+      margin-right: 0.3em;
+    }
+    input[type="checkbox"] {
+      transform: scale(1.2);
+      vertical-align: middle;
     }
     #log {
       width: 100%;
@@ -53,8 +76,43 @@
 </head>
 <body>
   <h1>EDM Continuous Music Generator</h1>
-  <p>Tap “Start” to unlock audio and begin. Watch the log for drum hits, synth notes, etc.</p>
-  <button id="toggleBtn">Start</button>
+
+  <!-- CONFIG PANEL -->
+  <div class="config-section">
+    <h2>Drum Sample Configuration</h2>
+    <p>
+      <label for="customToggle" class="checkbox-label">Use Custom?</label>
+      <input type="checkbox" id="customToggle"/>
+    </p>
+    <p>
+      <label for="kickUrl">Kick:</label>
+      <input type="text" id="kickUrl" size="50" 
+        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/Kick.ogg"/>
+    </p>
+    <p>
+      <label for="snareUrl">Snare:</label>
+      <input type="text" id="snareUrl" size="50" 
+        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/Snare.ogg"/>
+    </p>
+    <p>
+      <label for="hatClosedUrl">Closed Hat:</label>
+      <input type="text" id="hatClosedUrl" size="50" 
+        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/Hihat.ogg"/>
+    </p>
+    <p>
+      <label for="hatOpenUrl">Open Hat:</label>
+      <input type="text" id="hatOpenUrl" size="50" 
+        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/OH.ogg"/>
+    </p>
+    <button id="checkUrlsBtn">Check Custom URLs</button>
+  </div>
+
+  <!-- PLAY CONTROLS & LOG -->
+  <div class="play-section">
+    <h2>Playback Controls</h2>
+    <button id="toggleBtn">Start</button>
+  </div>
+
   <div id="log"></div>
 
   <script>
@@ -71,20 +129,93 @@
     }
 
     // ----------------------------
-    // 2. Global Audio Setup
+    // 2. Config & UI
     // ----------------------------
-    const drumSamples = {
-      kick: "https://raw.githubusercontent.com/danigb/samples/master/drums/TR-808/kick.wav",
-      snare: "https://raw.githubusercontent.com/danigb/samples/master/drums/TR-808/snare.wav",
-      hatClosed: "https://raw.githubusercontent.com/danigb/samples/master/drums/TR-808/hh.wav",
-      hatOpen: "https://raw.githubusercontent.com/danigb/samples/master/drums/TR-808/ohh.wav"
+    // Default sample URLs (from nbrosowsky/tonejs-instruments)
+    const defaultDrumSamples = {
+      kick: "Samples/SP1200 Drum Kit/SP1200 - Kicks/SPKICKS/SPKIK001.wav",
+      snare: "Samples/SP1200 Drum Kit/SP1200 - Snares/SPSN001.wav",
+      hatClosed: "Samples/SP1200 Drum Kit/SP1200 - Hats/SPHAT001.wav",
+      hatOpen: "Samples/SP1200 Drum Kit/SP1200 - Open Hats/SPOH01.wav"
     };
 
-    // Players for drum samples
-    const kickPlayer = new Tone.Player(drumSamples.kick).toDestination();
-    const snarePlayer = new Tone.Player(drumSamples.snare).toDestination();
-    const hatClosedPlayer = new Tone.Player(drumSamples.hatClosed).toDestination();
-    const hatOpenPlayer = new Tone.Player(drumSamples.hatOpen).toDestination();
+    // Current (active) sample URLs. Initially same as default
+    let currentSamples = { ...defaultDrumSamples };
+
+    // Grab UI elements
+    const customToggle = document.getElementById("customToggle");
+    const kickUrlInput = document.getElementById("kickUrl");
+    const snareUrlInput = document.getElementById("snareUrl");
+    const hatClosedUrlInput = document.getElementById("hatClosedUrl");
+    const hatOpenUrlInput = document.getElementById("hatOpenUrl");
+    const checkUrlsBtn = document.getElementById("checkUrlsBtn");
+    const toggleBtn = document.getElementById("toggleBtn");
+
+    customToggle.addEventListener("change", () => {
+      if (customToggle.checked) {
+        // If "Use Custom" is ON, update currentSamples from inputs
+        currentSamples.kick = kickUrlInput.value;
+        currentSamples.snare = snareUrlInput.value;
+        currentSamples.hatClosed = hatClosedUrlInput.value;
+        currentSamples.hatOpen = hatOpenUrlInput.value;
+        logMessage("Using custom sample URLs.");
+      } else {
+        // If "Use Custom" is OFF, revert to defaults
+        currentSamples = { ...defaultDrumSamples };
+        logMessage("Using default sample URLs.");
+      }
+    });
+
+    // Checking URLs with a HEAD request
+    async function checkUrl(url) {
+      try {
+        const response = await fetch(url, { method: "HEAD" });
+        return response.ok;
+      } catch (err) {
+        // If HEAD fails (CORS or other issues), we can fallback to GET if needed:
+        // const response = await fetch(url, { method: "GET" });
+        // return response.ok;
+        return false;
+      }
+    }
+
+    checkUrlsBtn.addEventListener("click", async () => {
+      // If custom is toggled on, read from inputs & check them
+      if (customToggle.checked) {
+        const urls = [
+          { name: "Kick", url: kickUrlInput.value },
+          { name: "Snare", url: snareUrlInput.value },
+          { name: "Closed Hat", url: hatClosedUrlInput.value },
+          { name: "Open Hat", url: hatOpenUrlInput.value },
+        ];
+        for (let item of urls) {
+          const ok = await checkUrl(item.url);
+          if (ok) {
+            logMessage(`[OK] ${item.name} URL reachable`);
+          } else {
+            logMessage(`[ERROR] ${item.name} URL NOT reachable`);
+          }
+        }
+      } else {
+        // If custom is off, just let user know we are using defaults
+        logMessage("Currently using default sample URLs (no need to check).");
+      }
+    });
+
+    // ----------------------------
+    // 3. Audio Setup (Tone.js)
+    // ----------------------------
+    // We'll create players *after* we decide which set of URLs are in use.
+    // But let's make a function that returns a new set of players:
+    function createDrumPlayers(sampleConfig) {
+      const players = {
+        kickPlayer: new Tone.Player(sampleConfig.kick).toDestination(),
+        snarePlayer: new Tone.Player(sampleConfig.snare).toDestination(),
+        hatClosedPlayer: new Tone.Player(sampleConfig.hatClosed).toDestination(),
+        hatOpenPlayer: new Tone.Player(sampleConfig.hatOpen).toDestination(),
+      };
+      return players;
+    }
 
     // A simple synth for melodic lines
     const synth = new Tone.Synth({
@@ -174,6 +305,10 @@
     // 4. Scheduling Loop
     // ---------------------------
     const loop = new Tone.Loop((time) => {
+      if (!drumPlayers) return; // If players not created yet, do nothing
+
+      const { kickPlayer, snarePlayer, hatClosedPlayer, hatOpenPlayer } = drumPlayers;
+
       // Drum triggers
       if (drumPattern.kick[currentStep]) {
         kickPlayer.start(time);
@@ -211,14 +346,26 @@
     }, "16n").start(0);
 
     // -------------
-    // 5. Start/Stop UI
+    // 4. Start/Stop UI
     // -------------
     let isPlaying = false;
-    const toggleBtn = document.getElementById("toggleBtn");
 
     toggleBtn.addEventListener("click", async () => {
       if (!isPlaying) {
-        // *** Important for mobile: Unlock audio context ***
+        // If custom is toggled, grab user inputs again
+        if (customToggle.checked) {
+          currentSamples.kick = kickUrlInput.value;
+          currentSamples.snare = snareUrlInput.value;
+          currentSamples.hatClosed = hatClosedUrlInput.value;
+          currentSamples.hatOpen = hatOpenUrlInput.value;
+        } else {
+          currentSamples = { ...defaultDrumSamples };
+        }
+
+        // Create new players from the current sample config
+        drumPlayers = createDrumPlayers(currentSamples);
+
+        // Unlock audio context for mobile
         await Tone.start();
         logMessage("Audio context unlocked");
 
