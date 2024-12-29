@@ -3,12 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>EDM Continuous Music Generator</title>
-  <!-- Tone.js from CDN (No integrity attribute to avoid mismatch) -->
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.min.js"
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  ></script>
   <style>
     body {
       font-family: sans-serif;
@@ -35,6 +29,24 @@
     }
     button:hover {
       background: #444;
+    }
+    #toggleBtn {
+      font-size: 1.5em;
+      padding: 0.5em 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+    }
+    #toggleBtn .icon {
+      font-size: 1.2em;
+      line-height: 1;
+    }
+    #toggleBtn[data-playing="true"] .play-icon {
+      display: none;
+    }
+    #toggleBtn[data-playing="false"] .stop-icon {
+      display: none;
     }
     .config-section, .play-section {
       max-width: 600px;
@@ -95,58 +107,179 @@
       padding: 1em;
       border-radius: 4px;
       z-index: 1000;
+      min-width: 400px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    #settings-menu .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
+      padding-bottom: 0.5em;
+      border-bottom: 1px solid #444;
+    }
+    #settings-menu .header h2 {
+      margin: 0;
+      font-size: 1.2em;
+    }
+    #settings-menu .close-btn {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 1.5em;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    #settings-menu .close-btn:hover {
+      color: #fff;
+    }
+    #settings-menu .buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5em;
+      margin-top: 1em;
+      padding-top: 1em;
+      border-top: 1px solid #444;
+    }
+    #settings-menu .save-btn {
+      background: #4CAF50;
+    }
+    #settings-menu .save-btn:hover {
+      background: #45a049;
+    }
+    #settings-menu .cancel-btn {
+      background: #666;
+    }
+    #settings-menu .cancel-btn:hover {
+      background: #777;
+    }
+    #audioStartOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    #audioStartButton {
+      padding: 20px 40px;
+      font-size: 24px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #audioStartButton:hover {
+      background: #45a049;
     }
   </style>
 </head>
 <body>
-  <h1>EDM Continuous Music Generator</h1>
-
-  <!-- CONFIG PANEL -->
-  <div class="config-section">
-    <h2>Drum Sample Configuration</h2>
-    <p>
-      <label for="customToggle" class="checkbox-label">Use Custom?</label>
-      <input type="checkbox" id="customToggle"/>
-    </p>
-    <p>
-      <label for="kickUrl">Kick:</label>
-      <input type="text" id="kickUrl" size="50" 
-        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/Kick.ogg"/>
-    </p>
-    <p>
-      <label for="snareUrl">Snare:</label>
-      <input type="text" id="snareUrl" size="50" 
-        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/Snare.ogg"/>
-    </p>
-    <p>
-      <label for="hatClosedUrl">Closed Hat:</label>
-      <input type="text" id="hatClosedUrl" size="50" 
-        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/Hihat.ogg"/>
-    </p>
-    <p>
-      <label for="hatOpenUrl">Open Hat:</label>
-      <input type="text" id="hatOpenUrl" size="50" 
-        value="https://raw.githubusercontent.com/nbrosowsky/tonejs-instruments/master/samples/tr-808/OH.ogg"/>
-    </p>
-    <button id="checkUrlsBtn">Check Custom URLs</button>
+  <!-- Add the overlay as the first element -->
+  <div id="audioStartOverlay">
+    <button id="audioStartButton">Click to Enable Audio</button>
   </div>
+  <h1>EDM Continuous Music Generator</h1>
 
   <!-- PLAY CONTROLS & LOG -->
   <div class="play-section">
     <h2>Playback Controls</h2>
-    <button id="toggleBtn">Start</button>
+    <button id="toggleBtn" data-playing="false">
+      <span class="icon play-icon">▶️</span>
+      <span class="icon stop-icon">⏹️</span>
+      <span class="text">Start</span>
+    </button>
   </div>
   <canvas id="waveform-canvas"></canvas>
   <div id="settings-icon">⚙️</div>
   <div id="settings-menu" style="display: none;">
-      <!-- Drum settings will be moved here -->
+    <div class="header">
+      <h2>Settings</h2>
+      <button class="close-btn">&times;</button>
+    </div>
+    <div class="config-section">
+      <h3>Drum Sample Configuration</h3>
+      <p>
+        <label for="customToggle" class="checkbox-label">Use Custom?</label>
+        <input type="checkbox" id="customToggle"/>
+      </p>
+      <p>
+        <label for="kickUrl">Kick:</label>
+        <input type="text" id="kickUrl" size="50" 
+          value="Samples/SP1200 Drum Kit/SP1200 - Kicks/SPKICKS/SPKIK001.wav"/>
+      </p>
+      <p>
+        <label for="snareUrl">Snare:</label>
+        <input type="text" id="snareUrl" size="50" 
+          value="Samples/SP1200 Drum Kit/SP1200 - Snares/SPSN001.wav"/>
+      </p>
+      <p>
+        <label for="hatClosedUrl">Closed Hat:</label>
+        <input type="text" id="hatClosedUrl" size="50" 
+          value="Samples/SP1200 Drum Kit/SP1200 - Hats/SPHAT001.wav"/>
+      </p>
+      <p>
+        <label for="hatOpenUrl">Open Hat:</label>
+        <input type="text" id="hatOpenUrl" size="50" 
+          value="Samples/SP1200 Drum Kit/SP1200 - Open Hats/SPOH01.wav"/>
+      </p>
+      <button id="checkUrlsBtn">Check Custom URLs</button>
+    </div>
+    <div class="buttons">
+      <button class="cancel-btn">Cancel</button>
+      <button class="save-btn">Save Changes</button>
+    </div>
   </div>
   <div id="log"></div>
 
   <script>
-    // ----------------------------
-    // 1. Logging Helper
-    // ----------------------------
+    // State management
+    let contextInitialized = false;
+    let toneInitialized = false;
+    let isPlaying = false;
+    let drumPlayers;
+    let analyser;
+    let transport;
+    let pendingChanges = null;
+
+    // UI Elements
+    const audioStartOverlay = document.getElementById('audioStartOverlay');
+    const audioStartButton = document.getElementById('audioStartButton');
+    const customToggle = document.getElementById("customToggle");
+    const kickUrlInput = document.getElementById("kickUrl");
+    const snareUrlInput = document.getElementById("snareUrl");
+    const hatClosedUrlInput = document.getElementById("hatClosedUrl");
+    const hatOpenUrlInput = document.getElementById("hatOpenUrl");
+    const checkUrlsBtn = document.getElementById("checkUrlsBtn");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const canvas = document.getElementById("waveform-canvas");
+    const canvasCtx = canvas.getContext("2d");
+    const settingsIcon = document.getElementById("settings-icon");
+    const settingsMenu = document.getElementById("settings-menu");
+    const closeBtn = settingsMenu.querySelector(".close-btn");
+    const saveBtn = settingsMenu.querySelector(".save-btn");
+    const cancelBtn = settingsMenu.querySelector(".cancel-btn");
+
+    // Sample configurations
+    const defaultDrumSamples = {
+      kick: "Samples/SP1200 Drum Kit/SP1200 - Kicks/SPKICKS/SPKIK001.wav",
+      snare: "Samples/SP1200 Drum Kit/SP1200 - Snares/SPSN001.wav",
+      hatClosed: "Samples/SP1200 Drum Kit/SP1200 - Hats/SPHAT001.wav",
+      hatOpen: "Samples/SP1200 Drum Kit/SP1200 - Open Hats/SPOH01.wav"
+    };
+
+    let currentSamples = { ...defaultDrumSamples };
+
+    // Logging helper
     function logMessage(message) {
       const logDiv = document.getElementById("log");
       const p = document.createElement("p");
@@ -156,45 +289,7 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    // ----------------------------
-    // 2. Config & UI
-    // ----------------------------
-    // Default sample URLs (from nbrosowsky/tonejs-instruments)
-    const defaultDrumSamples = {
-      kick: "Samples/SP1200 Drum Kit/SP1200 - Kicks/SPKICKS/SPKIK001.wav",
-      snare: "Samples/SP1200 Drum Kit/SP1200 - Snares/SPSN001.wav",
-      hatClosed: "Samples/SP1200 Drum Kit/SP1200 - Hats/SPHAT001.wav",
-      hatOpen: "Samples/SP1200 Drum Kit/SP1200 - Open Hats/SPOH01.wav"
-    };
-
-    // Current (active) sample URLs. Initially same as default
-    let currentSamples = { ...defaultDrumSamples };
-
-    // Grab UI elements
-    const customToggle = document.getElementById("customToggle");
-    const kickUrlInput = document.getElementById("kickUrl");
-    const snareUrlInput = document.getElementById("snareUrl");
-    const hatClosedUrlInput = document.getElementById("hatClosedUrl");
-    const hatOpenUrlInput = document.getElementById("hatOpenUrl");
-    const checkUrlsBtn = document.getElementById("checkUrlsBtn");
-    const toggleBtn = document.getElementById("toggleBtn");
-
-    customToggle.addEventListener("change", () => {
-      if (customToggle.checked) {
-        // If "Use Custom" is ON, update currentSamples from inputs
-        currentSamples.kick = kickUrlInput.value;
-        currentSamples.snare = snareUrlInput.value;
-        currentSamples.hatClosed = hatClosedUrlInput.value;
-        currentSamples.hatOpen = hatOpenUrlInput.value;
-        logMessage("Using custom sample URLs.");
-      } else {
-        // If "Use Custom" is OFF, revert to defaults
-        currentSamples = { ...defaultDrumSamples };
-        logMessage("Using default sample URLs.");
-      }
-    });
-
-    // Checking URLs with a HEAD request
+    // URL checking functionality
     async function checkUrl(url) {
       try {
         const response = await fetch(url, { method: "HEAD" });
@@ -207,226 +302,402 @@
       }
     }
 
-    checkUrlsBtn.addEventListener("click", async () => {
-      // If custom is toggled on, read from inputs & check them
-      if (customToggle.checked) {
-        const urls = [
-          { name: "Kick", url: kickUrlInput.value },
-          { name: "Snare", url: snareUrlInput.value },
-          { name: "Closed Hat", url: hatClosedUrlInput.value },
-          { name: "Open Hat", url: hatOpenUrlInput.value },
-        ];
-        for (let item of urls) {
-          const ok = await checkUrl(item.url);
-          if (ok) {
-            logMessage(`[OK] ${item.name} URL reachable`);
-          } else {
-            logMessage(`[ERROR] ${item.name} URL NOT reachable`);
-          }
+    // Initialize Tone.js and audio context
+    audioStartButton.addEventListener('click', async () => {
+      try {
+        if (!toneInitialized) {
+          // Dynamically load Tone.js
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/tone@14.8.26/build/Tone.js';
+            script.onload = () => {
+              toneInitialized = true;
+              resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+
+          // Initialize Tone.js
+          await Tone.start();
+          await Tone.context.resume();
+          contextInitialized = true;
+          console.log("Audio context initialized successfully");
+          
+          // Setup initial configuration
+          Tone.Transport.bpm.value = 128;
+          setupEventListeners();
+          
+          audioStartOverlay.style.display = 'none';
+          logMessage("Audio enabled - ready to play!");
         }
-      } else {
-        // If custom is off, just let user know we are using defaults
-        logMessage("Currently using default sample URLs (no need to check).");
+      } catch (error) {
+        console.error('Failed to initialize audio context:', error);
+        logMessage("Error: Failed to initialize audio. Please try again.");
       }
     });
 
-    // ----------------------------
-    // 3. Audio Setup (Tone.js)
-    // ----------------------------
-    // We'll create players *after* we decide which set of URLs are in use.
-    // But let's make a function that returns a new set of players:
-    function createDrumPlayers(sampleConfig) {
-      const players = {
-        kickPlayer: new Tone.Player(sampleConfig.kick).toDestination(),
-        snarePlayer: new Tone.Player(sampleConfig.snare).toDestination(),
-        hatClosedPlayer: new Tone.Player(sampleConfig.hatClosed).toDestination(),
-        hatOpenPlayer: new Tone.Player(sampleConfig.hatOpen).toDestination(),
-      };
-      return players;
-    }
-
-    // A simple synth for melodic lines
-    const synth = new Tone.Synth({
-      oscillator: {
-        type: "fatsawtooth",
-        count: 3,
-        spread: 20
-      },
-      envelope: {
-        attack: 0.01,
-        decay: 0.2,
-        sustain: 0.3,
-        release: 0.5
+    // Setup all event listeners that depend on Tone.js
+    function setupEventListeners() {
+      // Settings dialog management
+      function showSettings() {
+        // Store current values as pending changes
+        pendingChanges = {
+          useCustom: customToggle.checked,
+          kick: kickUrlInput.value,
+          snare: snareUrlInput.value,
+          hatClosed: hatClosedUrlInput.value,
+          hatOpen: hatOpenUrlInput.value
+        };
+        settingsMenu.style.display = "block";
       }
-    });
 
-    // Effects chain
-    const filter = new Tone.AutoFilter({
-      frequency: "4n",
-      baseFrequency: 200,
-      octaves: 2.6,
-      filter: {
-        type: "bandpass"
+      function hideSettings() {
+        settingsMenu.style.display = "none";
       }
-    }).start();
 
-    const reverb = new Tone.Reverb({
-      decay: 2,
-      wet: 0.3
-    }).toDestination();
-
-    synth.connect(filter);
-    filter.connect(reverb);
-
-    // Global BPM
-    Tone.Transport.bpm.value = 120;
-
-    // We'll use 16 steps per measure
-    const stepsPerMeasure = 16;
-    let currentStep = 0;
-
-    // Patterns for each measure (refreshed each measure)
-    let drumPattern = {
-      kick: [],
-      snare: [],
-      hatClosed: [],
-      hatOpen: []
-    };
-    let synthPattern = [];
-
-    // Pentatonic scale for melodic notes
-    const scale = ["A3", "C4", "D4", "E4", "G4", "A4", "C5", "D5", "E5"];
-
-    // -------------
-    // 3. Randomization
-    // -------------
-    function randomizeDrumPattern() {
-      drumPattern.kick = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.4 ? 1 : 0));
-      drumPattern.snare = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.25 ? 1 : 0));
-      drumPattern.hatClosed = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.5 ? 1 : 0));
-      drumPattern.hatOpen = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.1 ? 1 : 0));
-    }
-
-    function randomizeSynthPattern() {
-      synthPattern = Array.from({ length: stepsPerMeasure }, () => {
-        // 30% chance to play a note
-        if (Math.random() < 0.3) {
-          const note = scale[Math.floor(Math.random() * scale.length)];
-          return note;
+      function cancelChanges() {
+        if (pendingChanges) {
+          // Restore previous values
+          customToggle.checked = pendingChanges.useCustom;
+          kickUrlInput.value = pendingChanges.kick;
+          snareUrlInput.value = pendingChanges.snare;
+          hatClosedUrlInput.value = pendingChanges.hatClosed;
+          hatOpenUrlInput.value = pendingChanges.hatOpen;
         }
-        return null;
-      });
-    }
-
-    function randomizeEffects() {
-      reverb.wet.value = Math.random() * 0.5;       
-      reverb.decay = Math.random() * 3 + 0.5;       
-      filter.baseFrequency = Math.random() * 1000 + 200; 
-    }
-
-    // Initialize patterns/effects
-    randomizeDrumPattern();
-    randomizeSynthPattern();
-    randomizeEffects();
-
-    // ---------------------------
-    // 4. Scheduling Loop
-    // ---------------------------
-    const loop = new Tone.Loop((time) => {
-      if (!drumPlayers) return; // If players not created yet, do nothing
-
-      const { kickPlayer, snarePlayer, hatClosedPlayer, hatOpenPlayer } = drumPlayers;
-
-      // Drum triggers
-      if (drumPattern.kick[currentStep]) {
-        kickPlayer.start(time);
-        logMessage(`Kick at step ${currentStep}`);
-      }
-      if (drumPattern.snare[currentStep]) {
-        snarePlayer.start(time);
-        logMessage(`Snare at step ${currentStep}`);
-      }
-      if (drumPattern.hatClosed[currentStep]) {
-        hatClosedPlayer.start(time);
-        logMessage(`Closed hat at step ${currentStep}`);
-      }
-      if (drumPattern.hatOpen[currentStep]) {
-        hatOpenPlayer.start(time);
-        logMessage(`Open hat at step ${currentStep}`);
+        hideSettings();
       }
 
-      // Synth trigger
-      const note = synthPattern[currentStep];
-      if (note) {
-        synth.triggerAttackRelease(note, "16n", time);
-        logMessage(`Synth note ${note} at step ${currentStep}`);
-      }
-
-      currentStep = (currentStep + 1) % stepsPerMeasure;
-
-      // If we just wrapped a measure, randomize new patterns & effects
-      if (currentStep === 0) {
-        logMessage("---- New measure randomization ----");
-        randomizeDrumPattern();
-        randomizeSynthPattern();
-        randomizeEffects();
-      }
-    }, "16n").start(0);
-
-    // -------------
-    // 4. Start/Stop UI
-    // -------------
-    let isPlaying = false;
-
-    toggleBtn.addEventListener("click", async () => {
-      if (!isPlaying) {
-        // If custom is toggled, grab user inputs again
+      async function saveChanges() {
+        // Update sample configuration
         if (customToggle.checked) {
           currentSamples.kick = kickUrlInput.value;
           currentSamples.snare = snareUrlInput.value;
           currentSamples.hatClosed = hatClosedUrlInput.value;
           currentSamples.hatOpen = hatOpenUrlInput.value;
+          logMessage("Using custom sample URLs.");
         } else {
           currentSamples = { ...defaultDrumSamples };
+          logMessage("Using default sample URLs.");
         }
 
-        // Create new players from the current sample config
-        drumPlayers = createDrumPlayers(currentSamples);
+        // If currently playing, reload the players with new samples
+        if (isPlaying) {
+          try {
+            // Stop transport temporarily
+            Tone.Transport.stop();
+            
+            // Create new players with updated samples
+            drumPlayers = await createDrumPlayers(currentSamples);
+            setupAnalyser();
+            
+            // Resume transport
+            Tone.Transport.start();
+            logMessage("Updated samples while playing");
+          } catch (error) {
+            logMessage(`Error updating samples: ${error.message}`);
+          }
+        }
 
-        // Unlock audio context for mobile
-        await Tone.start();
-        logMessage("Audio context unlocked");
-
-        Tone.Transport.start();
-        toggleBtn.textContent = "Stop";
-        logMessage("Transport started");
-      } else {
-        Tone.Transport.stop();
-        toggleBtn.textContent = "Start";
-        logMessage("Transport stopped");
+        hideSettings();
       }
-      isPlaying = !isPlaying;
-    });
 
-    // ----------------------------
-    // 5. Waveform Visualizer
-    // ----------------------------
-    const canvas = document.getElementById("waveform-canvas");
-    const canvasCtx = canvas.getContext("2d");
-    let analyser;
+      // Settings button handlers
+      settingsIcon.addEventListener("click", showSettings);
+      closeBtn.addEventListener("click", cancelChanges);
+      cancelBtn.addEventListener("click", cancelChanges);
+      saveBtn.addEventListener("click", saveChanges);
 
+      // Custom toggle event listener
+      customToggle.addEventListener("change", () => {
+        if (customToggle.checked) {
+          logMessage("Custom mode enabled - changes will apply when saved");
+        } else {
+          logMessage("Default mode enabled - changes will apply when saved");
+        }
+      });
+
+      // Check URLs button event listener
+      checkUrlsBtn.addEventListener("click", async () => {
+        // If custom is toggled on, read from inputs & check them
+        if (customToggle.checked) {
+          const urls = [
+            { name: "Kick", url: kickUrlInput.value },
+            { name: "Snare", url: snareUrlInput.value },
+            { name: "Closed Hat", url: hatClosedUrlInput.value },
+            { name: "Open Hat", url: hatOpenUrlInput.value },
+          ];
+          for (let item of urls) {
+            const ok = await checkUrl(item.url);
+            if (ok) {
+              logMessage(`[OK] ${item.name} URL reachable`);
+            } else {
+              logMessage(`[ERROR] ${item.name} URL NOT reachable`);
+            }
+          }
+        } else {
+          // If custom is off, just let user know we are using defaults
+          logMessage("Currently using default sample URLs (no need to check).");
+        }
+      });
+
+      // Toggle button event listener
+      toggleBtn.addEventListener("click", async () => {
+        if (!isPlaying) {
+          try {
+            // Update sample configuration
+            if (customToggle.checked) {
+              currentSamples.kick = kickUrlInput.value;
+              currentSamples.snare = snareUrlInput.value;
+              currentSamples.hatClosed = hatClosedUrlInput.value;
+              currentSamples.hatOpen = hatOpenUrlInput.value;
+            } else {
+              currentSamples = { ...defaultDrumSamples };
+            }
+
+            // Create new players
+            drumPlayers = await createDrumPlayers(currentSamples);
+            setupAnalyser();
+            setupTransport();
+
+            await Tone.Transport.start();
+            toggleBtn.querySelector('.text').textContent = "Stop";
+            toggleBtn.setAttribute('data-playing', 'true');
+            logMessage("Transport started");
+          } catch (error) {
+            logMessage(`Error: ${error.message}`);
+            return;
+          }
+        } else {
+          Tone.Transport.stop();
+          toggleBtn.querySelector('.text').textContent = "Start";
+          toggleBtn.setAttribute('data-playing', 'false');
+          logMessage("Transport stopped");
+        }
+        isPlaying = !isPlaying;
+      });
+
+      // Settings menu setup
+      const configSection = document.querySelector(".config-section");
+      settingsMenu.appendChild(configSection);
+    }
+
+    // Create drum players
+    async function createDrumPlayers(sampleConfig) {
+      if (!toneInitialized) {
+        throw new Error("Audio not initialized. Please click 'Enable Audio' first.");
+      }
+
+      // Clean up existing players
+      if (drumPlayers) {
+        Object.values(drumPlayers).forEach(player => {
+          if (player) {
+            player.disconnect();
+            player.dispose();
+          }
+        });
+      }
+
+      // Log the sample paths
+      logMessage("Loading samples:");
+      Object.entries(sampleConfig).forEach(([key, path]) => {
+        logMessage(`${key}: ${path}`);
+      });
+
+      try {
+        // Create and load players
+        const players = {
+          kickPlayer: new Tone.Player().toDestination(),
+          snarePlayer: new Tone.Player().toDestination(),
+          hatClosedPlayer: new Tone.Player().toDestination(),
+          hatOpenPlayer: new Tone.Player().toDestination()
+        };
+
+        // Load samples
+        await Promise.all([
+          players.kickPlayer.load(sampleConfig.kick),
+          players.snarePlayer.load(sampleConfig.snare),
+          players.hatClosedPlayer.load(sampleConfig.hatClosed),
+          players.hatOpenPlayer.load(sampleConfig.hatOpen)
+        ]);
+
+        logMessage("All samples loaded successfully");
+        return players;
+      } catch (error) {
+        logMessage(`Error loading samples: ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Setup transport patterns
+    function setupTransport() {
+      if (!toneInitialized) return;
+
+      // Create synth and effects if they don't exist
+      if (!window.synth) {
+        // A simple synth for melodic lines
+        window.synth = new Tone.Synth({
+          oscillator: {
+            type: "fatsawtooth",
+            count: 3,
+            spread: 20
+          },
+          envelope: {
+            attack: 0.01,
+            decay: 0.2,
+            sustain: 0.3,
+            release: 0.5
+          }
+        });
+
+        // Effects chain
+        window.filter = new Tone.AutoFilter({
+          frequency: "4n",
+          baseFrequency: 200,
+          octaves: 2.6,
+          filter: {
+            type: "bandpass"
+          }
+        }).start();
+
+        window.reverb = new Tone.Reverb({
+          decay: 2,
+          wet: 0.3
+        }).toDestination();
+
+        window.synth.connect(window.filter);
+        window.filter.connect(window.reverb);
+      }
+
+      // Global BPM
+      Tone.Transport.bpm.value = 120;
+
+      // We'll use 16 steps per measure
+      const stepsPerMeasure = 16;
+      let currentStep = 0;
+
+      // Patterns for each measure (refreshed each measure)
+      let drumPattern = {
+        kick: [],
+        snare: [],
+        hatClosed: [],
+        hatOpen: []
+      };
+      let synthPattern = [];
+
+      // Pentatonic scale for melodic notes
+      const scale = ["A3", "C4", "D4", "E4", "G4", "A4", "C5", "D5", "E5"];
+
+      // Randomization functions
+      function randomizeDrumPattern() {
+        drumPattern.kick = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.4 ? 1 : 0));
+        drumPattern.snare = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.25 ? 1 : 0));
+        drumPattern.hatClosed = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.5 ? 1 : 0));
+        drumPattern.hatOpen = Array.from({ length: stepsPerMeasure }, () => (Math.random() < 0.1 ? 1 : 0));
+      }
+
+      function randomizeSynthPattern() {
+        synthPattern = Array.from({ length: stepsPerMeasure }, () => {
+          // 30% chance to play a note
+          if (Math.random() < 0.3) {
+            const note = scale[Math.floor(Math.random() * scale.length)];
+            return note;
+          }
+          return null;
+        });
+      }
+
+      function randomizeEffects() {
+        window.reverb.wet.value = Math.random() * 0.5;       
+        window.reverb.decay = Math.random() * 3 + 0.5;       
+        window.filter.baseFrequency = Math.random() * 1000 + 200; 
+      }
+
+      // Initialize patterns/effects
+      randomizeDrumPattern();
+      randomizeSynthPattern();
+      randomizeEffects();
+
+      // Clear any existing transport events
+      Tone.Transport.cancel();
+
+      // Main loop
+      const loop = new Tone.Loop((time) => {
+        if (!drumPlayers) return; // If players not created yet, do nothing
+
+        const { kickPlayer, snarePlayer, hatClosedPlayer, hatOpenPlayer } = drumPlayers;
+
+        // Drum triggers
+        if (drumPattern.kick[currentStep]) {
+          kickPlayer.start(time);
+          logMessage(`Kick at step ${currentStep}`);
+        }
+        if (drumPattern.snare[currentStep]) {
+          snarePlayer.start(time);
+          logMessage(`Snare at step ${currentStep}`);
+        }
+        if (drumPattern.hatClosed[currentStep]) {
+          hatClosedPlayer.start(time);
+          logMessage(`Closed hat at step ${currentStep}`);
+        }
+        if (drumPattern.hatOpen[currentStep]) {
+          hatOpenPlayer.start(time);
+          logMessage(`Open hat at step ${currentStep}`);
+        }
+
+        // Synth trigger
+        const note = synthPattern[currentStep];
+        if (note) {
+          window.synth.triggerAttackRelease(note, "16n", time);
+          logMessage(`Synth note ${note} at step ${currentStep}`);
+        }
+
+        currentStep = (currentStep + 1) % stepsPerMeasure;
+
+        // If we just wrapped a measure, randomize new patterns & effects
+        if (currentStep === 0) {
+          logMessage("---- New measure randomization ----");
+          randomizeDrumPattern();
+          randomizeSynthPattern();
+          randomizeEffects();
+        }
+      }, "16n").start(0);
+    }
+
+    // Setup analyser
+    function setupAnalyser() {
+      if (!toneInitialized) return;
+
+      if (analyser) {
+        analyser.disconnect();
+      }
+      
+      analyser = Tone.context.createAnalyser();
+      analyser.fftSize = 2048;
+      
+      if (drumPlayers) {
+        Object.values(drumPlayers).forEach(player => {
+          if (player) {
+            player.connect(analyser);
+          }
+        });
+      }
+      
+      drawWaveform();
+    }
+
+    // Draw waveform
     function drawWaveform() {
       if (!analyser) return;
-
+      
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
       analyser.getByteTimeDomainData(dataArray);
 
+      canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
       canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = "cyan";
+      canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
       canvasCtx.beginPath();
 
       const sliceWidth = canvas.width * 1.0 / bufferLength;
@@ -447,64 +718,8 @@
 
       canvasCtx.lineTo(canvas.width, canvas.height / 2);
       canvasCtx.stroke();
-
       requestAnimationFrame(drawWaveform);
     }
-
-    function setupAnalyser() {
-      analyser = Tone.context.createAnalyser();
-      analyser.fftSize = 2048;
-      Tone.getDestination().connect(analyser);
-      drawWaveform();
-    }
-
-    // ----------------------------
-    // 6. Settings Menu
-    // ----------------------------
-    const settingsIcon = document.getElementById("settings-icon");
-    const settingsMenu = document.getElementById("settings-menu");
-    const configSection = document.querySelector(".config-section");
-
-    // Move config section into settings menu
-    settingsMenu.appendChild(configSection);
-
-    settingsIcon.addEventListener("click", () => {
-      settingsMenu.style.display = settingsMenu.style.display === "none" ? "block" : "none";
-    });
-
-    // Modify the start/stop button to setup the analyser
-    toggleBtn.addEventListener("click", async () => {
-      if (!isPlaying) {
-        // If custom is toggled, grab user inputs again
-        if (customToggle.checked) {
-          currentSamples.kick = kickUrlInput.value;
-          currentSamples.snare = snareUrlInput.value;
-          currentSamples.hatClosed = hatClosedUrlInput.value;
-          currentSamples.hatOpen = hatOpenUrlInput.value;
-        } else {
-          currentSamples = { ...defaultDrumSamples };
-        }
-
-        // Create new players from the current sample config
-        drumPlayers = createDrumPlayers(currentSamples);
-
-        // Unlock audio context for mobile
-        await Tone.start();
-        logMessage("Audio context unlocked");
-
-        // Setup analyser for the kick player
-        setupAnalyser(drumPlayers.kickPlayer);
-
-        Tone.Transport.start();
-        toggleBtn.textContent = "Stop";
-        logMessage("Transport started");
-      } else {
-        Tone.Transport.stop();
-        toggleBtn.textContent = "Start";
-        logMessage("Transport stopped");
-      }
-      isPlaying = !isPlaying;
-    });
   </script>
 </body>
 </html>
