@@ -8,7 +8,7 @@
     }
   },
   "scripts": {
-    "build": "mkdir -p dist && cp Index.html dist && cp -r Samples dist",
+    "build": "mkdir -p dist && cp index.html dist && cp -r Samples dist",
     "postinstall": "node ./node_modules/husky/lib/bin.js install"
   }
 }
