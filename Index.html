@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Autechre-like Continuous Music Generator</title>
-  <!-- Tone.js (Open-Source) -->
-  <script 
-    src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.min.js" 
-    integrity="sha512-E1+I25m31WNRmyAH22KKKpwm2pyuVsZaffz4gquzAs3Ehu2/ryULMco0nPlzqcHLPywj7FK3ZtOdBJf/9Y5bhQ=="
+  <title>EDM Continuous Music Generator</title>
+  <!-- Tone.js from CDN (No integrity attribute to avoid mismatch) -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.26/Tone.min.js"
     crossorigin="anonymous"
-    referrerpolicy="no-referrer">
-  </script>
+    referrerpolicy="no-referrer"
+  ></script>
   <style>
     body {
       font-family: sans-serif;
@@ -53,7 +52,7 @@
   </style>
 </head>
 <body>
-  <h1>Autechre-like Continuous Music Generator</h1>
+  <h1>EDM Continuous Music Generator</h1>
   <p>Tap “Start” to unlock audio and begin. Watch the log for drum hits, synth notes, etc.</p>
   <button id="toggleBtn">Start</button>
   <div id="log"></div>
@@ -69,10 +68,6 @@
       logDiv.appendChild(p);
       // Auto-scroll to bottom
       logDiv.scrollTop = logDiv.scrollHeight;
-      // (Optional) If you want to limit the log size:
-      // if (logDiv.childNodes.length > 100) {
-      //   logDiv.removeChild(logDiv.firstChild);
-      // }
     }
 
     // ----------------------------
@@ -165,9 +160,9 @@
     }
 
     function randomizeEffects() {
-      reverb.wet.value = Math.random() * 0.5;       // 0 - 0.5
-      reverb.decay = Math.random() * 3 + 0.5;       // 0.5 - 3.5
-      filter.baseFrequency = Math.random() * 1000 + 200; // 200 - 1200
+      reverb.wet.value = Math.random() * 0.5;       
+      reverb.decay = Math.random() * 3 + 0.5;       
+      filter.baseFrequency = Math.random() * 1000 + 200; 
     }
 
     // Initialize patterns/effects
