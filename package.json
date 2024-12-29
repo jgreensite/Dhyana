@@ -8,7 +8,7 @@
     }
   },
   "scripts": {
-    "prod": "mkdir -p dist && cp Index.html dist && cp -r Samples dist",
+    "prod": "pwd && mkdir -p dist && cp Index.html dist && cp -r Samples dist && ls -la dist",
     "postinstall": "node ./node_modules/husky/lib/bin.js install",
     "deploy": "git push origin `git subtree split --prefix dist main`:gh-pages --force"
   }
